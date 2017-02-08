@@ -23,26 +23,28 @@
 
 using System;
 using System.Collections.Generic;
-using NUnit.Framework.Interfaces;
+using UnityCompatNUnit.Framework.Interfaces;
+// Due to a collision with UnityTestTools
+using TestResult = UnityCompatNUnit.Framework.Interfaces.ITestResult;
 
-namespace NUnit.Runner.Helpers
+namespace UnityCompatNUnit.Runner.Results
 {
     /// <summary>
     /// Contains all results from all tests in a <see cref="TestPackage"/>
     /// </summary>
-    internal class TestRunResult
+    public class NUnitTestRunResult
     {
-        private readonly List<ITestResult> _results = new List<ITestResult>();
+        private readonly List<TestResult> _results = new List<TestResult>();
 
         public DateTime StartTime { get; private set; }
         public DateTime EndTime { get; private set; }
 
-        public TestRunResult()
+        public NUnitTestRunResult()
         {
             StartTime = DateTime.Now;
         }
 
-        public void AddResult(ITestResult result)
+        public void AddResult(TestResult result)
         {
             _results.Add(result);
         }
@@ -52,6 +54,9 @@ namespace NUnit.Runner.Helpers
             EndTime = DateTime.Now;
         }
 
-        public IReadOnlyCollection<ITestResult> TestResults => _results;
+        public IList<TestResult> TestResults()
+        {
+            return _results.AsReadOnly();
+        }
     }
 }

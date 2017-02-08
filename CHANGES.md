@@ -1,3 +1,9 @@
+### NUnit Xamarin Runner Unity Device Compatibility - February 8, 2017
+
+This fork has modified the classes in the Helper subfolder to be used inside a Unity project with the similar fork of the NUnit framework. It removes references to Xamarin methods and .NET features not available in Unity 5.5.
+
+To use: grab the 3 files in the Helper subfolder and include them in a Plugins folder of your Unity project alongside your unity_compat_nunit.framework.dll
+
 ### NUnit Xamarin Runner 3.6.0 - January 26, 2017
 
 This release includes new functionality to write and retrieve a TestResult xml file, via either a TCP port or specified file path. Additional changes are also included to improve intergration with CI systems.

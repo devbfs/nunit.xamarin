@@ -25,27 +25,27 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Reflection;
 using System.Xml.Linq;
-using NUnit.Framework.Interfaces;
-using NUnit.Runner.Extensions;
-using Xamarin.Forms;
+using UnityCompatNUnit.Framework.Interfaces;
+// Due to a collision with UnityTestTools
+using TestResult = UnityCompatNUnit.Framework.Interfaces.ITestResult;
 
-namespace NUnit.Runner.Helpers
+namespace UnityCompatNUnit.Runner.Results
 {
     /// <summary>
     /// Helper class used to summarize the result of a test run.
     /// </summary>
-    internal class ResultSummary
+    public class NUnitResultSummary
     {
-        private readonly TestRunResult _results;
+        private readonly NUnitTestRunResult _results;
         private XDocument _xmlResults;
 
         #region Constructor
 
-        public ResultSummary(TestRunResult results)
+        public NUnitResultSummary(NUnitTestRunResult results)
         {
             _results = results;
             Initialize();
-            Summarize(results.TestResults);
+            Summarize(GetTestResults());
         }
 
         #endregion
@@ -55,9 +55,9 @@ namespace NUnit.Runner.Helpers
         ///Gets all TestResults
         /// </summary>
         /// <returns></returns>
-        public IReadOnlyCollection<ITestResult> GetTestResults()
+        public IList<TestResult> GetTestResults()
         {
-            return _results.TestResults;
+            return _results.TestResults();
         }
 
         /// <summary>
@@ -80,8 +80,6 @@ namespace NUnit.Runner.Helpers
             test.Add(new XAttribute("asserts", AssertCount));
             test.Add(new XAttribute("result", OverallResult));
 
-            test.Add(new XAttribute("xamarin-runner-version", typeof(ResultSummary).GetTypeInfo().Assembly.GetName().Version.ToString()));
-
             var startTime = _results.StartTime;
             var endTime = _results.EndTime;
             var duration = endTime.Subtract(startTime).TotalSeconds;
@@ -90,7 +88,9 @@ namespace NUnit.Runner.Helpers
             test.Add(new XAttribute("end-time", endTime.ToString("u")));
             test.Add(new XAttribute("duration", duration.ToString("0.000000", NumberFormatInfo.InvariantInfo)));
 
-            foreach (var result in _results.TestResults)
+            IList<TestResult> results = GetTestResults();
+
+            foreach (var result in results)
                 test.Add(XElement.Parse(result.ToXml(true).OuterXml));
 
             _xmlResults = new XDocument(test);
@@ -105,14 +105,6 @@ namespace NUnit.Runner.Helpers
         /// The overall result of the test run.
         /// </summary>
         public TestStatus OverallResult { get; private set; }
-
-        /// <summary>
-        /// Gets the color for the overall result.
-        /// </summary>
-        public Color OverallResultColor
-        {
-            get { return new ResultState(OverallResult).Color(); }
-        }
 
         /// <summary>
         /// Gets the number of test cases for which results
@@ -199,19 +191,19 @@ namespace NUnit.Runner.Helpers
             OverallResult = TestStatus.Inconclusive;
         }
 
-        private void Summarize(IEnumerable<ITestResult> results)
+        private void Summarize(IEnumerable<TestResult> results)
         {
             foreach (var result in results)
                 Summarize(result);
         }
 
-        private void Summarize(ITestResult result)
+        private void Summarize(TestResult result)
         {
             var status = TestStatus.Inconclusive;
 
             if (result.Test.IsSuite)
             {
-                foreach (ITestResult r in result.Children)
+                foreach (var r in result.Children)
                     Summarize(r);
             }
             else
@@ -249,17 +241,17 @@ namespace NUnit.Runner.Helpers
 
                 switch (OverallResult)
                 {
-                    case TestStatus.Inconclusive:
+                case TestStatus.Inconclusive:
+                    OverallResult = status;
+                    break;
+                case TestStatus.Passed:
+                    if (status == TestStatus.Failed)
                         OverallResult = status;
-                        break;
-                    case TestStatus.Passed:
-                        if (status == TestStatus.Failed)
-                            OverallResult = status;
-                        break;
-                    case TestStatus.Skipped:
-                    case TestStatus.Failed:
-                    default:
-                        break;
+                    break;
+                case TestStatus.Skipped:
+                case TestStatus.Failed:
+                default:
+                    break;
                 }
             }
         }
